@@ -30,6 +30,8 @@ The data is available on eCAMPUS as CSV file called: "ai4i2020.csv"
 All libraries used ***SHOULD BE PLACED*** in the code cell below
 """
 
+!pip install tensorflow==2.12.0
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -61,9 +63,7 @@ from imblearn.under_sampling import RandomUnderSampler
 
 data_path = "/content/ai4i2020.csv"
 
-
 df = pd.read_csv(data_path)
-
 
 df.head()
 
@@ -71,10 +71,8 @@ df.head()
 
 counts_machine_failure = df['Machine failure'].value_counts()
 
-
 labels = ['No Failure', 'Failure']
 values = [counts_machine_failure.get(0, 0), counts_machine_failure.get(1, 0)]
-
 
 plt.figure(figsize=(6, 4))
 plt.bar(labels, values, color=['blue', 'red'])
@@ -82,19 +80,17 @@ plt.title("Distribution of Machine Failures vs Non-Failures")
 plt.xlabel("Failure Status")
 plt.ylabel("Number of Machines")
 
-
 for i, v in enumerate(values):
     plt.text(i, v + 0.5, str(int(v)), ha='center')
-
 plt.show()
 
 """**ANALYSIS QUESTION:** What do you observe?
 
-Há muitas maquinas que não houveram falhas em compararação com máquinas que tiveram falhas.
+There are many more machines without failures compared to machines that experienced failures.
 
 **ANALYSIS QUESTION:** What will be the consequence of this phenomenon on the model's learning?
 
-Porteriormente ao usar esses dados para treinar a IA, pode acarretar em um bom aprendizado para detectar apenas quando não há falhas, resultando em mal aprendizado para identificar quando há falhas também.
+Subsequently, training the AI on such imbalanced data may result in a model that performs well in identifying non-failure cases, but poorly in detecting actual failures.
 
 **QUESTION:** Create a bar chart showing the distribution of different failure types (TWF, HDF, PWF, OSF, RNF). Display the exact values above each bar in the chart."
 """
@@ -116,7 +112,7 @@ plt.show()
 
 """**ANALYSIS QUESTION:** What do you observe?
 
-Mesmo em comparação com as maquinas que tiveram falhas, ainda sim há um diferença entre os tipos de falhas, onde 19 foram categorizadas como RNF e 115 foram caracterizadas como HDF.
+Even when comparing only the machines that experienced failures, there is still a noticeable imbalance among the types of failures: 19 were categorized as RNF and 115 as HDF. However, RNF will be removed from the dataset since it represents random failures, leaving TWF as a failure type with a significant discrepancy compared to the others.
 
 **QUESTION:** Create a bar chart showing the distribution of failure types (TWF, HDF, PWF, OSF, RNF) among machines that experienced a failure (Machine failure == 1). Additionally, add a "No Specific Failure" category to count cases where a machine failed but no specific failure type was recorded. Display the exact values above each bar in the chart."
 """
@@ -144,7 +140,7 @@ plt.show()
 
 """**ANALYSIS QUESTION:** What do you obsrve comapred to the previous question ? What can you conclude?
 
-Mais uma vez há uma discrepancia no número de amostras nas maquinás que obtiveram falhas, onde apenas 1 foi caracterizada como RNF e 115 como HDF
+Once again, there is a discrepancy in the number of samples among the machines that experienced failures. Within the RNF category, most of them were actually No Specific Failures.
 
 **QUESTION:** Display the names of the different columns in the dataset with their respective data types.
 """
@@ -153,10 +149,12 @@ print("Column Names and Data Types:")
 print(df.dtypes)
 
 """**ANALYSIS QUESTION:** To train the model, what will be the inputs and outputs (What are the names of the columns that you will use?)? Justify your response.
-Remember, you want to predict if the machine will fail, and if so, what kind of failure. You need to yse previous results to jsurtify your response.
+Remember, you want to predict if the machine will fail, and if so, what kind of failure. You need to use previous results to justify your response.
 
-Para treinar o modelo, as entradas escolhidas serão as variáveis que indicam o uso da máquina e situação fisica dela, como Air temperature, Process temperature, Rotational speed, Torque, Tool wear e Type, pois influenciam diretamente no desempenho e possíveis falhas. As saídas
-serão Machine failure e as colunas com os tipos de falhas como TWF, HDF, PWF e OSF, retirei RNF pois sua quantidade é irrisória em comparação com as outras falhas e principalmente porque são falhas aleatórias. Isso acarreta em uma previsão sobre os possiveis problemas além de permitir ações de manutenção preditiva baseadas nas condições da máquina.
+To train the model, the chosen input variables will be those that indicate the machine's usage and physical conditions, such as Air temperature, Process temperature, Rotational speed, Torque, Tool wear, and Type, as they directly influence performance and the occurrence of failures.
+The output variables will consist of the No failure column (created to represent cases where no failure occurred) and the columns of specific failure types such as TWF, HDF, PWF, and OSF.
+The RNF column was removed, because in addition to representing random failures, its amount is negligible compared to the others.
+Since the goal is to indicate the type of failure that occurred, the Machine failure column will be replaced by No failure, as this becomes more viable, given that the specific failure columns already indicate whether a failure occurred and what type it was, avoiding redundancies in the model.
 
 ## **2- Train model Without balancing the dataset**
 
@@ -167,32 +165,81 @@ In this section, you must build and train a model without rebalancing the datase
 **QUESTION:** Create X_train, Y_train, X_test, and Y_test. How many elements are present in X_train, Y_train, X_test, and Y_test? (Print the values)
 """
 
-# Criar variáveis dummies para a coluna 'Type'
+# Create dummy variables for the 'Type' column
 df = pd.get_dummies(df, columns=['Type'], drop_first=False)
 
-# Definir X (remover IDs e variáveis de saída)
-X = df.drop(columns=['UDI', 'Product ID', 'Machine failure', 'TWF', 'HDF', 'PWF', 'OSF', 'RNF'])
+#  Failure types
+failure_types = ['TWF', 'HDF', 'PWF', 'OSF']
 
-# Definir y (agora multi-label: cada falha é independente)
-Y = df[['Machine failure','TWF', 'HDF', 'PWF', 'OSF']]
+#  Remove samples with more than one specific failure
+df['sum_failures'] = df[failure_types].sum(axis=1)
+df = df[(df['Machine failure'] == 0) | ((df['Machine failure'] == 1) & (df['sum_failures'] == 1))]
+df.drop(columns='sum_failures', inplace=True)
 
-# Criar coluna "No Failure"
-#Y['No Failure'] = (df['Machine failure'] == 0).astype(int)
+#  Create "No failure" column
+df['No failure'] = (df['Machine failure'] == 0).astype(int)
 
-# Normalizar X para intervalo [0,1]
+#  Copy columns as Y base
+Y = df[['No failure', 'TWF', 'HDF', 'PWF', 'OSF']].copy()
+
+Y = Y.apply(lambda row: (row == 1).astype(int), axis=1)
+
+#  Define X (remove output and irrelevant columns)
+df = df.drop(columns=['class'], errors='ignore')
+X = df.drop(columns=['UDI', 'Product ID', 'Machine failure', 'TWF', 'HDF', 'PWF', 'OSF', 'RNF', 'No failure'])
+
+#  Normalize X
 scaler = MinMaxScaler()
 X_scaled = scaler.fit_transform(X)
 X = pd.DataFrame(X_scaled, columns=X.columns)
 
-# print das colunas de x e y
-print(X.head())
-print(Y.head())
-# Divisão treino (70%) e teste (30%)
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, random_state=42)
+#  Train/test split
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, random_state=42, stratify=Y.values.argmax(axis=1))
 
-# Exibir dimensões
+#  Show dimensions
 print(f"X_train shape: {X_train.shape}, Y_train shape: {Y_train.shape}")
 print(f"X_test shape: {X_test.shape}, Y_test shape: {Y_test.shape}")
+
+print("\nX:")
+
+print(X.head())
+
+print("\nY:")
+
+print(Y.head())
+
+# Specific failure types
+failure_types = ['TWF', 'HDF', 'PWF', 'OSF']
+
+# Create column with the sum of failures per row
+df['sum_failures'] = df[failure_types].sum(axis=1)
+
+# Filter only machines with failure AND a single specific failure
+filtered_failures = df[(df['Machine failure'] == 1) & (df['sum_failures'] == 1)]
+
+# Count how many unique samples remain
+num_remaining = filtered_failures.shape[0]
+print(f"Number of samples with only one specific failure: {num_remaining}")
+
+# Count how many of each failure type exist in the filtered samples
+remaining_failure_counts = filtered_failures[failure_types].sum()
+
+# Plot the distribution of failure types
+plt.figure(figsize=(8, 6))
+ax = sns.barplot(x=remaining_failure_counts.index, y=remaining_failure_counts.values,
+                 palette=['blue', 'orange', 'green', 'red'])
+
+# Add values above the bars
+for i, value in enumerate(remaining_failure_counts.values):
+    ax.text(i, value + 1, str(int(value)), ha='center', fontsize=12)
+
+plt.xlabel("Failure Type")
+plt.ylabel("Number of Occurrences")
+plt.title("Distribution of Unique Failures After Filtering")
+plt.show()
+
+# Remove the auxiliary column
+df.drop(columns='sum_failures', inplace=True)
 
 """
 
@@ -200,27 +247,29 @@ print(f"X_test shape: {X_test.shape}, Y_test shape: {Y_test.shape}")
 
 **QUESTION** Code below the model architecture"""
 
-# Criar o modelo aprimorado para multi-label
+# Model for multi-class classification (5 exclusive outputs)
 model = Sequential([
     Dense(64, kernel_regularizer=l2(0.01), input_shape=(X_train.shape[1],)),
     BatchNormalization(),
     LeakyReLU(),
-    Dropout(0.3),
+    Dropout(0.2),
 
-    Dense(32, kernel_regularizer=l2(0.005)),
-    BatchNormalization(),
+    Dense(32, kernel_regularizer=l2(0.01)),
+    #BatchNormalization(),
     LeakyReLU(),
     Dropout(0.2),
 
-    Dense(5, activation='sigmoid')  # 5 classes: Machine Failure, TWF, HDF, PWF, OSF
+    Dense(5, activation='softmax')  #  using softmax for exclusive multi-class
 ])
 
-# Compilar o modelo com métricas ajustadas
-model.compile(optimizer=AdamW(learning_rate=0.001, weight_decay=0.02),
-              loss='binary_crossentropy',  # Multi-label classification
-              metrics=['binary_accuracy', AUC(name='auc')])
+# Compilation with categorical_crossentropy
+model.compile(
+    optimizer=AdamW(learning_rate=0.001, weight_decay=0.02),
+    loss='categorical_crossentropy',           # one-hot multi-class
+    metrics=['accuracy']
+)
 
-# Exibir resumo
+# Display the summary
 model.summary()
 
 """**QUESTION** Code below the algorithms allowing to train model
@@ -228,11 +277,11 @@ model.summary()
 **WARNING!** You need to plot the training and test accuracy and loss to check if our model is overfitting
 """
 
-# Definir callbacks otimizados
-early_stopping = EarlyStopping(monitor='val_loss', patience=7, restore_best_weights=True, verbose=1)
+#  Callbacks
+early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True, verbose=1)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, min_lr=1e-6, verbose=1)
 
-# Treinar modelo
+#  Train the model
 history = model.fit(
     X_train, Y_train,
     validation_data=(X_test, Y_test),
@@ -242,27 +291,22 @@ history = model.fit(
     verbose=1
 )
 
-#Função para plotar métricas corretamente para multi-label
+#  Function to plot metrics
 def plot_metric(history, metric, title, ylabel, loc='upper left'):
     if metric in history.history:
-        plt.plot(history.history[metric], label='Treino')
+        plt.plot(history.history[metric], label='Train')
     if f'val_{metric}' in history.history:
-        plt.plot(history.history[f'val_{metric}'], label='Teste')
+        plt.plot(history.history[f'val_{metric}'], label='Validation')
 
     plt.title(title)
-    plt.xlabel('Época')
+    plt.xlabel('Epoch')
     plt.ylabel(ylabel)
     plt.legend(loc=loc)
     plt.show()
 
-#Plotar a perda (loss)
-plot_metric(history, 'loss', 'Perda (Loss) do Modelo', 'Loss', loc='upper right')
-
-#  Plotar acurácia binária (para multi-label)
-plot_metric(history, 'binary_accuracy', 'Acurácia Binária do Modelo', 'Acurácia')
-
-#  Plotar AUC (Área Sob a Curva ROC)
-plot_metric(history, 'auc', 'Área Sob a Curva ROC (AUC)', 'AUC')
+#  Plot the curves
+plot_metric(history, 'loss', 'Model Loss', 'Loss', loc='upper right')
+plot_metric(history, 'accuracy', 'Model Accuracy', 'Accuracy')
 
 """**QUESTION** Plot the confusion matrix and the classification report
 
@@ -277,37 +321,42 @@ plot_metric(history, 'auc', 'Área Sob a Curva ROC (AUC)', 'AUC')
 > https://scikit-learn.org/stable/modules/generated/sklearn.metrics.ConfusionMatrixDisplay.html
 """
 
-# Fazer previsões em probabilidades
+#  Make predictions (probabilities)
 Y_pred_probs = model.predict(X_test)
 
-# Ajustar threshold dinamicamente baseado na média das probabilidades
-thresholds = np.mean(Y_pred_probs, axis=0)  # Calcula média por classe
-Y_pred = (Y_pred_probs >= thresholds).astype(int)  # Ajusta decisão para cada classe
+#  Get the class with the highest probability (softmax) → final prediction
+Y_pred = Y_pred_probs.argmax(axis=1)
 
-#  Gerar relatório de classificação
-labels = ['Machine Failure', 'TWF', 'HDF', 'PWF', 'OSF']
-report = classification_report(Y_test, Y_pred, target_names=labels)
-print("\nRelatório de Classificação:")
+#  Get the true classes
+Y_true = Y_test.values.argmax(axis=1)
+
+#  Class labels
+labels = ['No failure', 'TWF', 'HDF', 'PWF', 'OSF']
+
+#  Generate classification report
+report = classification_report(Y_true, Y_pred, target_names=labels)
+print("\nClassification Report:")
 print(report)
 
-# Criar matrizes de confusão para cada classe
-cm_matrices = multilabel_confusion_matrix(Y_test, Y_pred)
+#  Create confusion matrix
+cm = confusion_matrix(Y_true, Y_pred)
 
-# Plotar as matrizes de confusão separadas por classe
-for i, label in enumerate(labels):
-    cm = cm_matrices[i].astype('float') / cm_matrices[i].sum(axis=1, keepdims=True) * 100  # Normalizar para porcentagem
+#  Normalize by row (percentage per true class)
+cm_percent = cm.astype('float') / cm.sum(axis=1, keepdims=True) * 100
 
-    plt.figure(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues",
-                xticklabels=["No", "Yes"], yticklabels=["No", "Yes"])
-    plt.title(f"Matriz de Confusão - {label} (%)")
-    plt.xlabel("Predito")
-    plt.ylabel("Real")
-    plt.show()
+#  Plot 5x5 confusion matrix
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm_percent, annot=True, fmt=".2f", cmap="Blues",
+            xticklabels=labels, yticklabels=labels)
+
+plt.title("Normalized Confusion Matrix (%)")
+plt.xlabel("Predicted Class")
+plt.ylabel("True Class")
+plt.show()
 
 """**ANALYSIS QUESTION** What do you observe? What can you conclude?
 
-O modelo ficou bom em prever quando não há falhas, porém ele não consegue prever quando há, e sempre a respota que prevalece é que não houve, dado que o numero de maquinas sem falhas é muito maior em comparação com as maquinas com falhas.
+"The model performs well in predicting when there are no failures, however, it struggles to predict when failures do occur. The predominant prediction tends to be 'no failure', due to the significantly larger number of no failure machines compared to those with failures.
 
 ## **3- Train model With balancing the dataset**
 
@@ -340,172 +389,145 @@ Methods for rebalancing a dataset:
 **QUESTION:** Create X_train, Y_train, X_test, and Y_test. How many elements are present in X_train, Y_train, X_test, and Y_test? (Print the values)
 """
 
-data_path = "/content/ai4i2020.csv"
-df = pd.read_csv(data_path)
+# Undersampling
+undersampler = RandomUnderSampler(sampling_strategy=0.3, random_state=42)
+X_resampled, y_no_failure = undersampler.fit_resample(X, Y['No failure'])
+selected_indices = y_no_failure.index
+Y_resampled = Y.iloc[selected_indices].copy()
+Y_resampled = Y_resampled.apply(lambda row: (row == 1).astype(int), axis=1)
 
-#separa os tipos das maquinas em booleanos
-df = pd.get_dummies(df, columns=['Type'], drop_first=False)
+# Split with stratification
+X_train_under, X_test_under, Y_train_under, Y_test_under = train_test_split(
+    X_resampled, Y_resampled, test_size=0.2, random_state=42,
+    stratify=Y_resampled.values.argmax(axis=1)
+)
 
-#Definir X e Y antes do balanceamento
-X = df.drop(columns=['UDI', 'Product ID', 'Machine failure', 'TWF', 'HDF', 'PWF', 'OSF', 'RNF'])
-Y = df[['Machine failure', 'TWF', 'HDF', 'PWF', 'OSF']]
+# Automatically compute class weights
+y_integers = Y_train_under.values.argmax(axis=1)
+classes = np.unique(y_integers)
 
-# Aplicar Undersampling APENAS para `Machine Failure`
-undersampler = RandomUnderSampler(sampling_strategy=0.3, random_state=42)  # Mantém 30% dos "No Failure"
-X_resampled, y_machine_failure = undersampler.fit_resample(X, Y['Machine failure'])  # Apenas Machine Failure
+class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_integers)
+class_weight_dict = {i: weight for i, weight in zip(classes, class_weights)}
 
-# Recuperar os índices selecionados pelo undersampling
-selected_indices = y_machine_failure.index
+print(class_weight_dict)
 
-# Filtrar `Y` completo para manter os rótulos corretos das amostras balanceadas
-Y_resampled = Y.loc[selected_indices]
-
-# Normalizar X para intervalo [0,1]
-scaler = MinMaxScaler()
-X_scaled = scaler.fit_transform(X_resampled)
-X_resampled = pd.DataFrame(X_scaled, columns=X.columns)
-
-# Agora dividir em treino (70%) e teste (30%)
-X_train, X_test, Y_train, Y_test = train_test_split(
-    X_resampled, Y_resampled, test_size=0.2, random_state=42)
-
-# Exibir dimensões finais
-print(f"X_train shape: {X_train.shape}, Y_train shape: {Y_train.shape}")
-print(f"X_test shape: {X_test.shape}, Y_test shape: {Y_test.shape}")
-
-X_train, Y_train
-X_test, Y_test
-
-# Contar a quantidade de máquinas com e sem falha após o undersampling
-failure_counts = Y_resampled['Machine failure'].value_counts()
-
-# Plotar a distribuição das máquinas após o undersampling
-plt.figure(figsize=(6, 4))
-ax = sns.barplot(x=failure_counts.index, y=failure_counts.values, palette=['blue', 'red'])
-
-# Adicionar valores acima das barras
-for i, value in enumerate(failure_counts.values):
-    ax.text(i, value + 2, str(value), ha='center', fontsize=12)
-
-plt.xlabel("Machine Failure (0 = Sem Falha, 1 = Com Falha)")
-plt.ylabel("Número de Máquinas")
-plt.title("Distribuição de Máquinas com e sem Falha após Undersampling")
-
-# Exibir o gráfico
-plt.show()
+print(X_train_under.shape, Y_train_under.shape, X_test_under.shape, Y_test_under.shape)
 
 """**ANALYSIS QUESTION:** Explain the choices you made to balance the dataset.
 
-Eu fiz a mistura de SMOTE e class weigths, pois com o SMOTE, consigo criar novas amostras das Maquinas com Falhas, enquanto que o classh weigths me permite modificar os pesos das variaveis de treino, assim consigo dar mais peso para as variaveis em menor numero e menor peso para as variaveis abundantes.
+I used undersampling together with class weight, where undersampling helps to reduce the large difference between the failure variables (TWF, HDF, PWF, OSF) and the machines without failures. Class weight, on the other hand, provides different weights during training, mainly adjusting the imbalance of TWF compared to the others.
+I did not use SMOTE because, although it allowed the model to learn well during training with the generated samples, in practice the model tended to correctly predict mostly the synthetic data, showing poor generalization to real data.
 
 **QUESTION:** Code below the model architecture
 
 **TIP:** It could be interesting to keep it the same as before
 """
 
-# Criar o modelo aprimorado para multi-label
+# Model for multi-class classification (5 exclusive outputs)
 model = Sequential([
-    Dense(64, kernel_regularizer=l2(0.01), input_shape=(X_train.shape[1],)),
-    BatchNormalization(),
-    LeakyReLU(),
-    Dropout(0.3),
-
-    Dense(32, kernel_regularizer=l2(0.01)),
+    Dense(64, kernel_regularizer=l2(0.01), input_shape=(X_train_under.shape[1],)),
     BatchNormalization(),
     LeakyReLU(),
     Dropout(0.2),
 
-    Dense(5, activation='sigmoid')  # 5 classes: Machine Failure, TWF, HDF, PWF, OSF
+    Dense(32, kernel_regularizer=l2(0.01)),
+    #BatchNormalization(),
+    LeakyReLU(),
+    Dropout(0.2),
+
+    Dense(5, activation='softmax')  #  using softmax for exclusive multi-class
 ])
 
-# Compilar o modelo com métricas ajustadas
-model.compile(optimizer=AdamW(learning_rate=0.001, weight_decay=0.01),
-              loss='binary_crossentropy',  # Multi-label classification
-              metrics=['binary_accuracy', AUC(name='auc')])
+# Compilation with categorical_crossentropy
+model.compile(
+    optimizer=AdamW(learning_rate=0.001, weight_decay=0.02),
+    loss='categorical_crossentropy',           # one-hot multi-class
+    metrics=['accuracy']
+)
 
-# Exibir resumo
+# Display the summary
 model.summary()
 
 """**QUESTION** Code below the algorithms allowing to train model
 
 """
 
-# Definir callbacks otimizados
-early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True, verbose=1)
+#  Callbacks
+early_stopping = EarlyStopping(monitor='val_loss', patience=7, restore_best_weights=True, verbose=1)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, min_lr=1e-6, verbose=1)
 
-# Criar dicionário de class_weight no formato correto para o modelo Keras
-class_weight_dict = {i: class_weights[i][1] for i in range(len(class_weights))}
-
-# Treinar o modelo com os dados balanceados e pesos ajustados
+#  Train the model
 history = model.fit(
-    X_train,
-    Y_train,
-    validation_data=(X_test, Y_test),
+    X_train_under,
+    Y_train_under,
+    validation_data=(X_test_under, Y_test_under),
     epochs=50,
     batch_size=64,
-    #class_weight=class_weight_dict,  # Aplicando class weights automáticos
-    #class_weight=custom_class_weights,
+    class_weight=class_weight_dict,
     callbacks=[early_stopping, reduce_lr],
     verbose=1
 )
 
-
-
-
-#Função para plotar métricas corretamente para multi-label
+#  Function to plot metrics
 def plot_metric(history, metric, title, ylabel, loc='upper left'):
     if metric in history.history:
-        plt.plot(history.history[metric], label='Treino')
+        plt.plot(history.history[metric], label='Train')
     if f'val_{metric}' in history.history:
-        plt.plot(history.history[f'val_{metric}'], label='Teste')
+        plt.plot(history.history[f'val_{metric}'], label='Validation')
 
     plt.title(title)
-    plt.xlabel('Época')
+    plt.xlabel('Epoch')
     plt.ylabel(ylabel)
     plt.legend(loc=loc)
     plt.show()
 
-#Plotar a perda (loss)
-plot_metric(history, 'loss', 'Perda (Loss) do Modelo', 'Loss', loc='upper right')
+#  Plot the curves
+plot_metric(history, 'loss', 'Model Loss', 'Loss', loc='upper right')
+plot_metric(history, 'accuracy', 'Model Accuracy', 'Accuracy')
 
-#  Plotar acurácia binária (para multi-label)
-plot_metric(history, 'binary_accuracy', 'Acurácia Binária do Modelo', 'Acurácia')
-
-#  Plotar AUC (Área Sob a Curva ROC)
-plot_metric(history, 'auc', 'Área Sob a Curva ROC (AUC)', 'AUC')
+#  Save test data and model
+np.save('X_test_labels.npy', 'X_test_under')
+np.save('Y_test_labels.npy', 'Y_test_under')
+model.save('model_test.h5')
 
 """**QUESTION** Plot the confusion matrix and the classification report"""
 
-# Fazer previsões em probabilidades
-Y_pred_probs = model.predict(X_test)
+#  Make predictions as probabilities
+Y_pred_probs = model.predict(X_test_under)
 
-# Ajustar threshold dinamicamente baseado na média das probabilidades
-thresholds = np.mean(Y_pred_probs, axis=0)  # Calcula média por classe
-Y_pred = (Y_pred_probs >= thresholds).astype(int)  # Ajusta decisão para cada classe
+#  Get the class with the highest probability (softmax) → final prediction
+Y_pred = Y_pred_probs.argmax(axis=1)
 
-#  Gerar relatório de classificação
-labels = ['Machine Failure', 'TWF', 'HDF', 'PWF', 'OSF']
-report = classification_report(Y_test, Y_pred, target_names=labels)
-print("\nRelatório de Classificação:")
+#  Get the true classes
+Y_true = Y_test_under.values.argmax(axis=1)
+
+#  Class labels
+labels = ['No failure', 'TWF', 'HDF', 'PWF', 'OSF']
+
+#  Generate classification report
+report = classification_report(Y_true, Y_pred, target_names=labels)
+print("\nClassification Report:")
 print(report)
 
-# Criar matrizes de confusão para cada classe
-cm_matrices = multilabel_confusion_matrix(Y_test, Y_pred)
+#  Create confusion matrix
+cm = confusion_matrix(Y_true, Y_pred)
 
-# Plotar as matrizes de confusão separadas por classe
-for i, label in enumerate(labels):
-    cm = cm_matrices[i].astype('float') / cm_matrices[i].sum(axis=1, keepdims=True) * 100  # Normalizar para porcentagem
+#  Normalize by row (percentage per true class)
+cm_percent = cm.astype('float') / cm.sum(axis=1, keepdims=True) * 100
 
-    plt.figure(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues",
-                xticklabels=["No", "Yes"], yticklabels=["No", "Yes"])
-    plt.title(f"Matriz de Confusão - {label} (%)")
-    plt.xlabel("Predito")
-    plt.ylabel("Real")
-    plt.show()
+#  Plot the 5x5 confusion matrix
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm_percent, annot=True, fmt=".2f", cmap="Blues",
+            xticklabels=labels, yticklabels=labels)
+
+plt.title("Normalized Confusion Matrix (%)")
+plt.xlabel("Predicted Class")
+plt.ylabel("True Class")
+plt.show()
 
 """**ANALYSIS QUESTION** What do you observe? What can you conclude?
 
-Foi melhorado grandemente em comparação com os dados sem balanceamento, uma vez que retirei uma parte das amostras que não possuiam falhas, pois o numero era grande demais comparado com maquinas que tinham falhas. Outro ponto a ser analisado é que meu modelo atual ainda não possui perfeita precisão, pois ele aponta muitos falsos positivos, porém não vejo como algo crítico, pois o caso de não previsão quando há falhas pode acarretar em perdas maiores.
+It was greatly improved compared to the data without balancing, since I removed a portion of the samples that had no failures, as their number was too high compared to the machines that had failures.
+As previously mentioned, I used class weight to penalize or not certain samples during training, but even so, I was not able to balance the predictions for TWF, as the recall is very high while the precision is low, this indicates that there are many false positives, which I believe is due to the use of class weight.
+In any case, the overall model showed an accuracy above 80%, being able to predict the types of failures with greater precision.
 """
