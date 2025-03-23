@@ -33,9 +33,10 @@ These transformations help the model focus on learning from meaningful patterns 
 At the end of the training process, the following files are saved:
 
 ```python
-# Save test data and model
-np.save('X_test_labels.npy', 'X_test_under')
-np.save('Y_test_labels.npy', 'Y_test_under')
+#  Save test data and model
+np.save('X_test_labels.npy', X_test_under)
+Y_test_under = Y_test_under.astype(np.float32)
+np.save('Y_test_labels.npy', Y_test_under)
 model.save('model_test.h5')
 ```
 
