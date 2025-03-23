@@ -102,7 +102,7 @@ You can modify parameters like the learning rate, batch size, or class weights i
 
 After training and validating the model in Python, it was successfully embedded into a microcontroller for real-time inference.
 
-The deployment was done on an **STM32L4R9** development board using **STM32CubeIDE** and **STM32CubeMx. The trained neural network (`model_test.h5`) was converted and integrated into a C project to classify machine failures directly on the embedded hardware.
+The deployment was done on an **STM32L4R9** development board using **STM32CubeIDE** and **STM32CubeMx**. The trained neural network (`model_test.h5`) was converted and integrated into a C project to classify machine failures directly on the embedded hardware.
 
 ### Results and Embedded Code
 
