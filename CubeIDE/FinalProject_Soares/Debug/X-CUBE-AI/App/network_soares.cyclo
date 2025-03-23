@@ -1,0 +1,13 @@
+../X-CUBE-AI/App/network_soares.c:372:9:network_soares_configure_activations	2
+../X-CUBE-AI/App/network_soares.c:405:9:network_soares_configure_weights	2
+../X-CUBE-AI/App/network_soares.c:444:9:ai_network_soares_get_info	4
+../X-CUBE-AI/App/network_soares.c:491:9:ai_network_soares_get_report	4
+../X-CUBE-AI/App/network_soares.c:538:10:ai_network_soares_get_error	1
+../X-CUBE-AI/App/network_soares.c:545:10:ai_network_soares_create	1
+../X-CUBE-AI/App/network_soares.c:556:10:ai_network_soares_create_and_init	8
+../X-CUBE-AI/App/network_soares.c:591:12:ai_network_soares_inputs_get	2
+../X-CUBE-AI/App/network_soares.c:602:12:ai_network_soares_outputs_get	2
+../X-CUBE-AI/App/network_soares.c:613:11:ai_network_soares_destroy	1
+../X-CUBE-AI/App/network_soares.c:620:9:ai_network_soares_init	2
+../X-CUBE-AI/App/network_soares.c:637:8:ai_network_soares_run	1
+../X-CUBE-AI/App/network_soares.c:645:8:ai_network_soares_forward	1
