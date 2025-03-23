@@ -98,5 +98,17 @@ The output includes:
 
 You can modify parameters like the learning rate, batch size, or class weights in the training cell for experimentation.
 
+## Deployment on STM32
+
+After training and validating the model in Python, it was successfully embedded into a microcontroller for real-time inference.
+
+The deployment was done on an **STM32L4R9** development board using **STM32CubeIDE** and **STM32CubeMx. The trained neural network (`model_test.h5`) was converted and integrated into a C project to classify machine failures directly on the embedded hardware.
+
+### Results and Embedded Code
+
+The final embedded implementation, including the inference logic and model integration, can be found in the following folder of this repository:
+
+```bash
+CubeIDE/FinalProject_Soares
 
 
