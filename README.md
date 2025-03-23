@@ -69,8 +69,9 @@ cd IA-Embarque
 2. **Run with Google Colab (Recommended)**  
 Open the `.ipynb` notebook directly in Google Colab:
 
-[Open in Colab](https://colab.research.google.com/github/LuizSoares001/IA-Embarque/blob/main/TP%20Colab%20Python/IA_Embarque_Model.ipynb)
-
+```bash
+Notebook Colab "TP Colab Python/TP_IA_EMBARQUEE.ipynb"
+```
 ---
 
 3. **Run Locally via Python script**  
