@@ -1,0 +1,175 @@
+ST Edge AI Core v2.0.0-20049
+Created date          : 2025-03-23 16:03:21
+Parameters            : analyze --target stm32l4 --name network_soares -m F:/CubeIDE/model_test.h5 --compression none --verbosity 1 --workspace C:/Users/cncai/AppData/Local/Temp/mxAI_workspace37838480664370014053031573852315785 --output C:/Users/cncai/.stm32cubemx/network_output
+
+Exec/report summary (analyze)
+-------------------------------------------------------------------------------------------------------------
+model file         :   F:\CubeIDE\model_test.h5                                                              
+type               :   keras                                                                                 
+c_name             :   network_soares                                                                        
+compression        :   none                                                                                  
+options            :   allocate-inputs, allocate-outputs                                                     
+optimization       :   balanced                                                                              
+target/series      :   stm32l4                                                                               
+workspace dir      :   C:\Users\cncai\AppData\Local\Temp\mxAI_workspace37838480664370014053031573852315785   
+output dir         :   C:\Users\cncai\.stm32cubemx\network_output                                            
+model_fmt          :   float                                                                                 
+model_name         :   model_test                                                                            
+model_hash         :   0x8614c2a4107993bb77a9d7a86b120fea                                                    
+params #           :   2,949 items (11.52 KiB)                                                               
+-------------------------------------------------------------------------------------------------------------
+input 1/1          :   'input_0', f32(1x8), 32 Bytes, activations                                            
+output 1/1         :   'dense_8', f32(1x5), 20 Bytes, activations                                            
+macc               :   3,184                                                                                 
+weights (ro)       :   11,284 B (11.02 KiB) (1 segment) / -512(-4.3%) vs float model                         
+activations (rw)   :   384 B (384 B) (1 segment) *                                                           
+ram (total)        :   384 B (384 B) = 384 + 0 + 0                                                           
+-------------------------------------------------------------------------------------------------------------
+(*) 'input'/'output' buffers can be used from the activations buffer
+
+Model name - model_test
+------ ------------------------------------------------------- ------------ ------------- ------- ----------------------- --- ----------------- --------------- ------------------------------- 
+m_id   layer (type,original)                                   oshape       param/size       macc            connected to   | c_size            c_macc          c_type                          
+------ ------------------------------------------------------- ------------ ------------- ------- ----------------------- --- ----------------- --------------- ------------------------------- 
+0      input_0 (Input, None)                                   [b:1,c:8]                                                    |                                   
+       dense_6 (Dense, Dense)                                  [b:1,c:64]   576/2,304         576                 input_0   | -2,304(-100.0%)   -576(-100.0%)   
+------ ------------------------------------------------------- ------------ ------------- ------- ----------------------- --- ----------------- --------------- ------------------------------- 
+1      batch_normalization_2 (ScaleBias, BatchNormalization)   [b:1,c:64]   128/512           128                 dense_6   | +1,792(+350.0%)   +448(+350.0%)   Dense_[0]                       
+------ ------------------------------------------------------- ------------ ------------- ------- ----------------------- --- ----------------- --------------- ------------------------------- 
+2      leaky_re_lu_4 (Nonlinearity, LeakyReLU)                 [b:1,c:64]                      64   batch_normalization_2   |                   +128(+200.0%)   Nonlinearity_[1]                
+------ ------------------------------------------------------- ------------ ------------- ------- ----------------------- --- ----------------- --------------- ------------------------------- 
+4      dense_7 (Dense, Dense)                                  [b:1,c:32]   2,080/8,320     2,080           leaky_re_lu_4   |                                   Dense_[2]                       
+------ ------------------------------------------------------- ------------ ------------- ------- ----------------------- --- ----------------- --------------- ------------------------------- 
+5      leaky_re_lu_5 (Nonlinearity, LeakyReLU)                 [b:1,c:32]                      32                 dense_7   |                   +64(+200.0%)    Nonlinearity_[3]                
+------ ------------------------------------------------------- ------------ ------------- ------- ----------------------- --- ----------------- --------------- ------------------------------- 
+7      dense_8_dense (Dense, Dense)                            [b:1,c:5]    165/660           165           leaky_re_lu_5   |                   +75(+45.5%)     Dense_/Nonlinearity_[o][4, 5]   
+       dense_8 (Nonlinearity, Dense)                           [b:1,c:5]                       75           dense_8_dense   |                   -75(-100.0%)    
+------ ------------------------------------------------------- ------------ ------------- ------- ----------------------- --- ----------------- --------------- ------------------------------- 
+model/c-model: macc=3,120/3,184 +64(+2.1%) weights=11,796/11,284 -512(-4.3%) activations=--/384 io=--/0
+
+
+
+Generated C-graph summary
+------------------------------------------------------------------------------------------------------------------------
+model name            : model_test
+c-name                : network_soares
+c-node #              : 6
+c-array #             : 13
+activations size      : 384 (1 segment)
+weights size          : 11284 (1 segment)
+macc                  : 3184
+inputs                : ['input_0_output']
+outputs               : ['dense_8_output']
+
+C-Arrays (13)
+------ ----------------------- ----------- ------------------------- ------------- --------- 
+c_id   name (*_array)          item/size   domain/mem-pool           c-type        comment   
+------ ----------------------- ----------- ------------------------- ------------- --------- 
+0      dense_6_bias            64/256      weights/weights           const float             
+1      dense_6_output          64/256      activations/**default**   float                   
+2      dense_6_weights         512/2048    weights/weights           const float             
+3      dense_7_bias            32/128      weights/weights           const float             
+4      dense_7_output          32/128      activations/**default**   float                   
+5      dense_7_weights         2048/8192   weights/weights           const float             
+6      dense_8_dense_bias      5/20        weights/weights           const float             
+7      dense_8_dense_output    5/20        activations/**default**   float                   
+8      dense_8_dense_weights   160/640     weights/weights           const float             
+9      dense_8_output          5/20        activations/**default**   float         /output   
+10     input_0_output          8/32        activations/**default**   float         /input    
+11     leaky_re_lu_4_output    64/256      activations/**default**   float                   
+12     leaky_re_lu_5_output    32/128      activations/**default**   float                   
+------ ----------------------- ----------- ------------------------- ------------- --------- 
+
+C-Layers (6)
+------ ---------------- ---- --------------- ------ ------ -------------------------- ------------------ 
+c_id   name (*_layer)   id   layer_type      macc   rom    tensors                    shape (array id)   
+------ ---------------- ---- --------------- ------ ------ -------------------------- ------------------ 
+0      dense_6          1    Dense           576    2304   I: input_0_output          f32(1x8) (10)      
+                                                           W: dense_6_weights         f32(64x8) (2)      
+                                                           W: dense_6_bias            f32(64) (0)        
+                                                           O: dense_6_output          f32(1x64) (1)      
+------ ---------------- ---- --------------- ------ ------ -------------------------- ------------------ 
+1      leaky_re_lu_4    2    Nonlinearity    192    0      I: dense_6_output          f32(1x64) (1)      
+                                                           O: leaky_re_lu_4_output    f32(1x64) (11)     
+------ ---------------- ---- --------------- ------ ------ -------------------------- ------------------ 
+2      dense_7          4    Dense           2080   8320   I: leaky_re_lu_4_output    f32(1x64) (11)     
+                                                           W: dense_7_weights         f32(32x64) (5)     
+                                                           W: dense_7_bias            f32(32) (3)        
+                                                           O: dense_7_output          f32(1x32) (4)      
+------ ---------------- ---- --------------- ------ ------ -------------------------- ------------------ 
+3      leaky_re_lu_5    5    Nonlinearity    96     0      I: dense_7_output          f32(1x32) (4)      
+                                                           O: leaky_re_lu_5_output    f32(1x32) (12)     
+------ ---------------- ---- --------------- ------ ------ -------------------------- ------------------ 
+4      dense_8_dense    7    Dense           165    660    I: leaky_re_lu_5_output    f32(1x32) (12)     
+                                                           W: dense_8_dense_weights   f32(5x32) (8)      
+                                                           W: dense_8_dense_bias      f32(5) (6)         
+                                                           O: dense_8_dense_output    f32(1x5) (7)       
+------ ---------------- ---- --------------- ------ ------ -------------------------- ------------------ 
+5      dense_8          7    Nonlinearity    75     0      I: dense_8_dense_output    f32(1x5) (7)       
+                                                           O: dense_8_output          f32(1x5) (9)       
+------ ---------------- ---- --------------- ------ ------ -------------------------- ------------------ 
+
+
+
+Number of operations per c-layer
+------- ------ ------------------------------ ------- -------------- 
+c_id    m_id   name (type)                        #op           type 
+------- ------ ------------------------------ ------- -------------- 
+0       1      dense_6 (Dense)                    576   smul_f32_f32 
+1       2      leaky_re_lu_4 (Nonlinearity)       192     op_f32_f32 
+2       4      dense_7 (Dense)                  2,080   smul_f32_f32 
+3       5      leaky_re_lu_5 (Nonlinearity)        96     op_f32_f32 
+4       7      dense_8_dense (Dense)              165   smul_f32_f32 
+5       7      dense_8 (Nonlinearity)              75     op_f32_f32 
+------- ------ ------------------------------ ------- -------------- 
+total                                           3,184 
+
+Number of operation types
+---------------- ------- ----------- 
+operation type         #           % 
+---------------- ------- ----------- 
+smul_f32_f32       2,821       88.6% 
+op_f32_f32           363       11.4% 
+
+Complexity report (model)
+------ ----------------------- ------------------------- ------------------------- -------- 
+m_id   name                    c_macc                    c_rom                     c_id     
+------ ----------------------- ------------------------- ------------------------- -------- 
+1      batch_normalization_2   |||||             18.1%   |||||             20.4%   [0]      
+2      leaky_re_lu_4           ||                 6.0%   |                  0.0%   [1]      
+4      dense_7                 ||||||||||||||||  65.3%   ||||||||||||||||  73.7%   [2]      
+5      leaky_re_lu_5           |                  3.0%   |                  0.0%   [3]      
+7      dense_8_dense           ||                 7.5%   ||                 5.8%   [4, 5]   
+------ ----------------------- ------------------------- ------------------------- -------- 
+macc=3,184 weights=11,284 act=384 ram_io=0
+ 
+ Requested memory size by section - "stm32l4" target
+ ------------------------------ ------- -------- ------- ----- 
+ module                            text   rodata    data   bss 
+ ------------------------------ ------- -------- ------- ----- 
+ NetworkRuntime1000_CM4_GCC.a     7,012        0       0     0 
+ network_soares.o                   538      104   1,752   148 
+ network_soares_data.o               48       16      88     0 
+ lib (toolchain)*                   614       24       0     0 
+ ------------------------------ ------- -------- ------- ----- 
+ RT total**                       8,212      144   1,840   148 
+ ------------------------------ ------- -------- ------- ----- 
+ weights                              0   11,288       0     0 
+ activations                          0        0       0   384 
+ io                                   0        0       0     0 
+ ------------------------------ ------- -------- ------- ----- 
+ TOTAL                            8,212   11,432   1,840   532 
+ ------------------------------ ------- -------- ------- ----- 
+ *  toolchain objects (libm/libgcc*)
+ ** RT AI runtime objects (kernels+infrastructure)
+  
+  Summary - "stm32l4" target
+  ---------------------------------------------------
+               FLASH (ro)      %*   RAM (rw)       % 
+  ---------------------------------------------------
+  RT total         10,196   47.5%      1,988   83.8% 
+  ---------------------------------------------------
+  TOTAL            21,484              2,372         
+  ---------------------------------------------------
+  *  rt/total
+
