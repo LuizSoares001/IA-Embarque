@@ -110,5 +110,16 @@ The final embedded implementation, including the inference logic and model integ
 
 ```bash
 CubeIDE/FinalProject_Soares
+```
 
+### Communication Test with STM32
 
+A communication test was conducted to validate the model's predictions running on the embedded STM32 board. The test involved sending the first 100 samples from the test dataset and collecting the predictions returned by the board.
+
+The results of this test are saved in the following file:
+
+```bash
+CubeIDE/test_communication.txt
+```
+
+This validated the successful integration of the AI model with the STM32 system and confirmed that the predictions are consistent with those produced during model evaluation in Python.
