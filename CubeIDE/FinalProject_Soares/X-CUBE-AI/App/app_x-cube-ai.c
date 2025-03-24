@@ -182,7 +182,38 @@ static int ai_run(void)
 }
 
 /* USER CODE BEGIN 2 */
-int acquire_and_process_data(ai_i8* data[])
+void synchronize_UART(void)
+
+  {
+
+      bool is_synced = 0;
+
+      unsigned char rx[2] = {0};
+
+      unsigned char tx[2] = {ACKNOWLEDGE, 0};
+
+      while (!is_synced)
+
+      {
+
+        HAL_UART_Receive(&huart2, (uint8_t *)rx, sizeof(rx), TIMEOUT);
+
+        if (rx[0] == SYNCHRONISATION)
+
+        {
+
+          HAL_UART_Transmit(&huart2, (uint8_t *)tx, sizeof(tx), TIMEOUT);
+
+          is_synced = 1;
+
+        }
+
+      }
+
+      return;
+
+  }
+int acquire_and_process_data(uint8_t* data[])
 {
 
     //
@@ -265,7 +296,7 @@ int acquire_and_process_data(ai_i8* data[])
 
 }
 
-int post_process(ai_i8* data[])
+int post_process(uint8_t* data[])
 {
 
     //
@@ -367,59 +398,40 @@ void MX_X_CUBE_AI_Process(void)
 
   uint8_t *out_data = ai_output[0].data;
 
-  void synchronize_UART(void)
-
-  {
-
-      bool is_synced = 0;
-
-      unsigned char rx[2] = {0};
-
-      unsigned char tx[2] = {ACKNOWLEDGE, 0};
-
-      while (!is_synced)
-
-      {
-
-        HAL_UART_Receive(&huart2, (uint8_t *)rx, sizeof(rx), TIMEOUT);
-
-        if (rx[0] == SYNCHRONISATION)
-
-        {
-
-          HAL_UART_Transmit(&huart2, (uint8_t *)tx, sizeof(tx), TIMEOUT);
-
-          is_synced = 1;
-
-        }
-
-      }
-
-      return;
-
-  }
+  synchronize_UART();
 
   if (network_soares) {
 
-    do {
+	  while (1) {
+	      res = acquire_and_process_data(in_data);
+	      if (res != 0) continue;
 
-      /* 1 - acquire and pre-process input data */
+	      res = ai_run();
+	      if (res != 0) continue;
 
-      res = acquire_and_process_data(in_data);
+	      res = post_process(out_data);
+	      if (res != 0) continue;
+	  }
 
-      /* 2 - process the data - call inference engine */
-
-      if (res == 0)
-
-        res = ai_run();
-
-      /* 3- post-process the predictions */
-
-      if (res == 0)
-
-        res = post_process(out_data);
-
-    } while (res==0);
+//    do {
+//
+//      /* 1 - acquire and pre-process input data */
+//
+//      res = acquire_and_process_data(in_data);
+//
+//      /* 2 - process the data - call inference engine */
+//
+//      if (res == 0)
+//
+//        res = ai_run();
+//
+//      /* 3- post-process the predictions */
+//
+//      if (res == 0)
+//
+//        res = post_process(out_data);
+//
+//    } while (res==0);
 
   }
 
